@@ -1,22 +1,25 @@
 var Q = require('q');
+var path = require('path');
 var validate = require('lambduh-validate');
 var download = require('lambduh-get-s3-object');
+var mime = require('mime');
+var fs = require('fs');
+
+var superagent = require('superagent');
 
 var vimeoCreds = {
-  accessToken: "55a8d1476ec34778e207a4fb59cb4d5a",
-  clientId: "3a122cf8c0b2e69c14898dc40dbdd828e3407d44",
-  clientSecrets: "0MOZIAxP+5qMbPG1V/TH4P0hbgkZsgBdYPsSZFUSN3FVvWAzjOT7QWr43AK0Pb765lJDRWM8asPLxzjwVSgN5Nb3fIm9qnS1puioDnSPpdFbRBb1TvVxpBg5hnuKKIw7",
-
+  accessToken: "55a8d1476ec34778e207a4fb59cb4d5a"
 }
 
-var Vimeo = require('vimeo-api').Vimeo;
-var vimeo = new Vimeo(
-  vimeoCreds.clientId,
-  vimeoCreds.clientSecrets,
-  vimeoCreds.accessToken
-);
+function getFilesizeInBytes(filename) {
+  var stats = fs.statSync(filename);
+  var fileSizeInBytes = stats["size"];
+  return fileSizeInBytes;
+}
 
 exports.handler = function(event, context) {
+  var localFilepath = "";
+
   validate(event, {
     sourceBucket: true,
     sourceKey: true,
@@ -25,12 +28,22 @@ exports.handler = function(event, context) {
   })
 
   .then(function(event) {
+    localFilepath = "/tmp/" + path.basename(event.sourceKey);
     //download specified file
     return download(event, {
       srcBucket: event.sourceBucket,
       srcKey: event.sourceKey,
-      downloadFilepath: "/tmp/" + path.basename(event.sourceKey)
+      downloadFilepath: localFilepath
     })
+  })
+
+  .then(function(event) {
+    var def = Q.defer();
+    console.log('waiting for a sec');
+    setTimeout(function() {
+      def.resolve(event);
+    }, 1000);
+    return def.promise;
   })
 
   .then(function(event) {
@@ -38,22 +51,38 @@ exports.handler = function(event, context) {
     //upload file from "/tmp/" + path.basename(event.sourceKey) to vimeo
     console.log('ready to upload to vimeo');
 
-    vimeo.streamingUpload("/tmp/" + path.basename(event.sourceKey),
-      function(err, body, status_code, headers) {
+    superagent
+      .post("https://api.vimeo.com/me/videos")
+      .set('Authorization', 'bearer ' + vimeoCreds.accessToken)
+      .send({type: 'streaming'})
+      .end(function(err, res) {
         if (err) {
+          console.log(err)
           def.reject(err);
         } else {
-          console.log('streamingUpload success');
-          vimeo.request(headers.location, function(err, body, status_code, headers) {
-            if (err) {
-              def.reject(err);
-            } else {
-              console.log('second request success');
-              def.resolve(event);
-            }
-          })
+          console.log('res.body');
+          console.log(res.body);
+
+          superagent
+            .put(res.body.upload_link_secure)
+            .set('Authorization', 'bearer ' + vimeoCreds.accessToken)
+            .set('Content-Type', mime.lookup(localFilepath))
+            .set('Content-Length', getFilesizeInBytes(localFilepath))
+            .send(localFilepath)
+            .end(function(err, res) {
+              if (err) {
+                console.log(err)
+                def.reject(err);
+              } else {
+                console.log('res.body');
+                console.log(res.body);
+
+                def.resolve(event);
+              }
+            })
+
         }
-      })
+      });
 
     return def.promise;
   })
