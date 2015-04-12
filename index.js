@@ -57,7 +57,6 @@ exports.handler = function(event, context) {
       .send({type: 'streaming'})
       .end(function(err, res) {
         if (err) {
-          console.log(err)
           def.reject(err);
         } else {
           console.log('res.body');
@@ -71,7 +70,6 @@ exports.handler = function(event, context) {
             .send(localFilepath)
             .end(function(err, res) {
               if (err) {
-                console.log(err)
                 def.reject(err);
               } else {
                 console.log('res.body');
