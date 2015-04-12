@@ -1,5 +1,5 @@
 {
-  "name": "bosco.upload-to-vimeo",
+  "name": "lambda-upload-to-vimeo",
   "version": "1.0.0",
   "description": "lambda function uploading any file to vimeo",
   "main": "index.js",
