@@ -10,4 +10,8 @@ var input = {
 var index = require('./')
 
 
-index.handler(input)
+index.handler(input, {
+  done: function() {
+    console.log('done called');
+  }
+})

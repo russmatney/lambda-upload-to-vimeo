@@ -5,7 +5,7 @@ var download = require('lambduh-get-s3-object');
 var mime = require('mime');
 var fs = require('fs');
 
-var superagent = require('superagent');
+var req = require('request');
 
 var vimeoCreds = {
   accessToken: "55a8d1476ec34778e207a4fb59cb4d5a"
@@ -51,36 +51,90 @@ exports.handler = function(event, context) {
     //upload file from "/tmp/" + path.basename(event.sourceKey) to vimeo
     console.log('ready to upload to vimeo');
 
-    superagent
-      .post("https://api.vimeo.com/me/videos")
-      .set('Authorization', 'bearer ' + vimeoCreds.accessToken)
-      .send({type: 'streaming'})
-      .end(function(err, res) {
-        if (err) {
-          def.reject(err);
-        } else {
-          console.log('res.body');
-          console.log(res.body);
+    req({
+      url: "https://api.vimeo.com/me/videos",
+      method: "POST",
+      json: true,
+      body: {
+        type: 'streaming'
+      },
+      headers: {
+        'Authorization': 'bearer ' + vimeoCreds.accessToken
+      }
+    }, function(err, response, body){
+      if (err) {
+        def.reject(err)
+      }
+      console.log(body);
+      var uploadUrl = body.upload_link_secure;
+      var completeUri = body.complete_uri;
 
-          superagent
-            .put(res.body.upload_link_secure)
-            .set('Authorization', 'bearer ' + vimeoCreds.accessToken)
-            .set('Content-Type', mime.lookup(localFilepath))
-            .set('Content-Length', getFilesizeInBytes(localFilepath))
-            .send(localFilepath)
-            .end(function(err, res) {
-              if (err) {
-                def.reject(err);
-              } else {
-                console.log('res.body');
-                console.log(res.body);
+      var readStream = fs.createReadStream(localFilepath)
+      readStream.pipe(
+        req({
+          url: uploadUrl,
+          method: "PUT",
+          headers: {
+            'Content-Type': mime.lookup(localFilepath),
+            'Content-Length': getFilesizeInBytes(localFilepath)
+          }
+        }, function(err, response, body) {
+          if (err) {
+            def.reject(err)
+          }
+          console.log(response.statusCode);
+          console.log('chunk uploaded?');
+          console.log(body);
 
-                def.resolve(event);
-              }
-            })
+          req({
+            url: uploadUrl,
+            method: "PUT",
+            headers: {
+              'Content-Length': 0,
+              'Content-Range': 'bytes */*'
+            }
+          }, function(err, response, bod) {
+            if (err) {
+              def.reject(err)
+            } else if (response.statusCode !== 308) {
+              def.reject("incomplete download")
+            } else {
+              console.log('308 means done done done');
+              console.log(response.statusCode);
+              console.log(bod);
 
-        }
+              req({
+                url: "https://api.vimeo.com" + completeUri,
+                method: "DELETE",
+                headers: {
+                  'Authorization': 'bearer ' + vimeoCreds.accessToken
+                }
+              }, function(err, response, body) {
+                if (err) {
+                  def.reject(err)
+                } else {
+
+                  console.log('completely processed?');
+                  console.log(response.statusCode);
+                  console.log(body);
+
+                  def.resolve(event)
+                }
+              })
+
+            }
+          })
+        }));
+
+      readStream.on('error', function(err) {
+        console.log('error uploading');
+        def.reject(err);
       });
+      readStream.on('end', function() {
+        console.log('readStream end');
+      });
+
+    })
 
     return def.promise;
   })
