@@ -77,26 +77,30 @@ exports.handler = function(event, context) {
   //upload file to upload_link_secure
   .then(function(event) {
     var def = Q.defer();
+
+    var uploadReq = req({
+      url: event.upload_link_secure,
+      method: "PUT",
+      headers: {
+        'Content-Type': mime.lookup(event.localFilepath),
+        'Content-Length': getFilesizeInBytes(event.localFilepath)
+      }
+    })
+
+    uploadReq.on('error', function(err) {
+      def.reject(err);
+    })
+    uploadReq.on('end', function() {
+      def.resolve(event);
+    })
+
     var readStream = fs.createReadStream(event.localFilepath)
     readStream.on('error', function(err) {
       console.log('error uploading file');
       def.reject(err);
     });
-    readStream.pipe(
-      req({
-        url: event.upload_link_secure,
-        method: "PUT",
-        headers: {
-          'Content-Type': mime.lookup(event.localFilepath),
-          'Content-Length': getFilesizeInBytes(event.localFilepath)
-        }
-      }, function(err, response) {
-        if (err) {
-          def.reject(err)
-        } else {
-          def.resolve(event);
-        }
-      }));
+    readStream.pipe(uploadReq);
+
     return def.promise;
   })
 
