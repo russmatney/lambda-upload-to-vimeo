@@ -29,6 +29,7 @@ exports.handler = function(event, context) {
 
   //download specified file
   .then(function(event) {
+    console.log('downloading file');
     event.localFilepath = "/tmp/" + path.basename(event.sourceKey);
     return download(event, {
       srcBucket: event.sourceBucket,
@@ -88,6 +89,7 @@ exports.handler = function(event, context) {
     })
 
     uploadReq.on('error', function(err) {
+      console.log('uploadReq error');
       def.reject(err);
     })
     uploadReq.on('end', function() {
