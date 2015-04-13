@@ -8,7 +8,7 @@ var fs = require('fs');
 var req = require('request');
 
 var vimeoCreds = {
-  accessToken: "55a8d1476ec34778e207a4fb59cb4d5a"
+  accessToken: "499a1737e1e8401bcdd321941afad729"
 }
 
 function getFilesizeInBytes(filename) {
@@ -78,13 +78,11 @@ exports.handler = function(event, context) {
             'Content-Type': mime.lookup(localFilepath),
             'Content-Length': getFilesizeInBytes(localFilepath)
           }
-        }, function(err, response, body) {
+        }, function(err, response) {
           if (err) {
             def.reject(err)
           }
-          console.log(response.statusCode);
           console.log('chunk uploaded?');
-          console.log(body);
 
           req({
             url: uploadUrl,
@@ -93,15 +91,13 @@ exports.handler = function(event, context) {
               'Content-Length': 0,
               'Content-Range': 'bytes */*'
             }
-          }, function(err, response, bod) {
+          }, function(err, response) {
             if (err) {
               def.reject(err)
             } else if (response.statusCode !== 308) {
               def.reject("incomplete download")
             } else {
-              console.log('308 means done done done');
               console.log(response.statusCode);
-              console.log(bod);
 
               req({
                 url: "https://api.vimeo.com" + completeUri,
@@ -109,14 +105,12 @@ exports.handler = function(event, context) {
                 headers: {
                   'Authorization': 'bearer ' + vimeoCreds.accessToken
                 }
-              }, function(err, response, body) {
+              }, function(err, response) {
                 if (err) {
                   def.reject(err)
                 } else {
 
-                  console.log('completely processed?');
-                  console.log(response.statusCode);
-                  console.log(body);
+                  event.clip_uri = response.headers.location;
 
                   def.resolve(event)
                 }
@@ -140,6 +134,33 @@ exports.handler = function(event, context) {
   })
 
   .then(function(event) {
+    var def = Q.defer();
+    req({
+      url: "https://api.vimeo.com" + event.clip_uri,
+      method: "PATCH",
+      json: true,
+      body: {
+        name: event.videoTitle,
+        description: event.musicCredit
+      },
+      headers: {
+        Authorization: 'bearer ' + vimeoCreds.accessToken
+      }
+    }, function(err, response, body) {
+      if(err) {
+        def.reject(err);
+      } else {
+        console.log('meta data updated');
+        console.log(response.statusCode);
+        console.log(body);
+        def.resolve(event);
+      }
+    })
+    return def.promise;
+  })
+
+  .then(function(event) {
+    console.log(event);
     context.done();
   })
 
