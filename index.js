@@ -23,7 +23,7 @@ exports.handler = function(event, context) {
   validate(event, {
     sourceBucket: true,
     sourceKey: true,
-    musicCredit: true,
+    videoDescription: true,
     videoTitle: true,
   })
 
@@ -157,9 +157,9 @@ exports.handler = function(event, context) {
       url: "https://api.vimeo.com" + event.clip_uri,
       method: "PATCH",
       json: true,
-      body: {//TODO: body here could be handed in as an object to stay more flexible
+      body: {
         name: event.videoTitle,
-        description: event.musicCredit //license?
+        description: event.videoDescription
       },
       headers: {
         Authorization: 'bearer ' + vimeoCreds.accessToken
