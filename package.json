@@ -20,13 +20,10 @@
     "run-sequence": "^1.0.2"
   },
   "dependencies": {
-    "filed": "^0.1.0",
     "lambduh-get-s3-object": "^1.0.0",
     "lambduh-validate": "^1.1.0",
     "mime": "^1.3.4",
     "q": "^1.2.0",
-    "request": "^2.55.0",
-    "superagent": "^1.1.0",
-    "vimeo-api": "git://github.com/vimeo/vimeo.js.git#master"
+    "request": "^2.55.0"
   }
 }

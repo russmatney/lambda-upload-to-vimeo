@@ -109,7 +109,6 @@ exports.handler = function(event, context) {
                 if (err) {
                   def.reject(err)
                 } else {
-
                   event.clip_uri = response.headers.location;
 
                   def.resolve(event)
@@ -133,6 +132,7 @@ exports.handler = function(event, context) {
     return def.promise;
   })
 
+  //update video meta data
   .then(function(event) {
     var def = Q.defer();
     req({
@@ -141,7 +141,7 @@ exports.handler = function(event, context) {
       json: true,
       body: {
         name: event.videoTitle,
-        description: event.musicCredit
+        description: event.musicCredit //license?
       },
       headers: {
         Authorization: 'bearer ' + vimeoCreds.accessToken
