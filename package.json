@@ -11,10 +11,10 @@
   "devDependencies": {
     "gulp": "^3.8.11",
     "gulp-mocha": "^2.0.1",
-    "lambduh-gulp": "git://github.com/lambduh/lambduh-gulp#master"
+    "lambduh-gulp": "^0.1.0"
   },
   "dependencies": {
-    "lambduh-get-s3-object": "git://github.com/lambduh/lambduh-get-s3-object.git#master",
+    "lambduh-get-s3-object": "^1.1.0",
     "lambduh-validate": "^1.1.0",
     "mime": "^1.3.4",
     "q": "^1.2.0",
