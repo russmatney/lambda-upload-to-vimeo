@@ -2,9 +2,9 @@ console.log('running test file');
 
 var input = {
   "sourceBucket": "russbosco",
-  "sourceKey": "events/awesomeparty201/timelapse/timelapse-final.mp4",
-  "musicCredit": "Music Credit",
-  "videoTitle": "Video Title"
+  "sourceKey": "events/Legends of Felda/timelapse/video-0.mp4",
+  "videoDescription": "Music Credit for mah homies",
+  "videoTitle": "legiondhairy"
 }
 
 var index = require('./')
