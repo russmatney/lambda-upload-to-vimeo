@@ -1,7 +1,9 @@
 module.exports = {
-  region: 'us-east-1',
-  handler: 'index.handler',
-  role: 'arn:aws:iam::106586740595:role/executionrole',
-  functionName: 'upload-to-vimeo',
-  timeout: 60
+  FunctionName: 'upload-to-vimeo',
+  Handler: 'index.handler',
+  Region: 'us-east-1',
+  Runtime: 'nodejs',
+  Role: 'arn:aws:iam::106586740595:role/executionrole',
+  MemorySize: 320,
+  Timeout: 60
 }
